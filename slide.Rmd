@@ -1,0 +1,95 @@
+---
+title: 'Data Product :: Shiny App :: BoxPlot Demo'
+author: "J R Shrestha"
+date: "May 31, 2016"
+output: slidy_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+
+#Introduction
+
+This is the documentation for the data product powered by Shiny App for the Assignment project of Coursera Data Science course.
+
+It generates a dataframe having two fields: gender and salary with random values and produces a boxplot for salary against each gender. The user can select total number of samples, mean, standard deviation for randomization of values along with some bias.
+
+## Application URLs
+
+Application published at:
+
+https://jr-shrestha.shinyapps.io/DataProduct/
+
+Code can be obtained from:
+
+https://github.com/jr-shrestha/DataProduct
+
+#Functionality
+
+- When the application is launched, a box plot is produced with default values 
+
+- User changes any of the following values through the sliders and the box plot is updated as per the user input:
+
+    * Total Number of samples: total number of random observations to generate
+    * Mean Salary: mean of the random salary values being generated (input for rnorm)
+    * Standard Deviation: standard deviation of the random salary values being generated (input for rnorm)
+    * Bias (in %): just to increment the salary of a gender by certain % and do the opposite to the other gender
+        
+        - +ve value will increse the salaries of male gender and decrease the salaries of female gender
+        - -ve value will do jus the opposite
+
+#Implementation of server.R
+
+```{r, echo=TRUE, eval=FALSE}
+library(UsingR)
+shinyServer(
+  function(input, output) {
+    output$newBoxPlot <- renderPlot({
+      #Extract the variables from UI into local variables 
+      totalNum <- input$totalNum
+      meanVal  <- input$meanVal
+      sdevVal  <- input$sdevVal
+      biasVal  <- input$biasVal
+      
+      #Construct a dataframe of gender and salary with random values
+      gender <- as.factor(sample(c('male', 'female'), totalNum, replace=TRUE))
+      salary <- rnorm(totalNum, mean=meanVal, sd=sdevVal)
+      dFrame <- data.frame(gender,salary) 
+      
+      #Introduce some bias in the salary as per the gender
+      dFrame[which(gender=='female'),]$salary <- dFrame[which(gender=='female'),]$salary * (1-biasVal/100)
+      dFrame[which(gender=='male'),]$salary <- dFrame[which(gender=='male'),]$salary * (1+biasVal/100)
+      
+      boxplot(salary~gender, data = dFrame, xlab='Gender', ylab='salary')
+    })
+  }
+)
+```
+
+#Implementation of ui.R
+
+```{r, echo=TRUE, eval=FALSE}
+shinyUI(pageWithSidebar(
+  headerPanel("BoxPlot Demo: Monthly Salary Vs Income"),
+  sidebarPanel(
+    h3('Input for randomization'),
+    sliderInput('totalNum', 'Total Number of Samples', value = 500, min = 100, max = 1000, step = 50),
+    sliderInput('meanVal', 'Mean Salary', value = 50000, min = 10000, max = 90000, step = 1000),
+    sliderInput('sdevVal', 'Standard Deviation', value = 10000, min = 0, max = 20000, step = 1000),
+    
+    h3('Introduce Bias'),
+    p('+ve value --> increase salary in male'),
+    p('-ve value --> increase salary in female'),
+    sliderInput('biasVal', 'Bias (in %)', value = 0, min = -50, max = 50, step = 5)
+  ),
+  
+  mainPanel(
+    plotOutput('newBoxPlot')
+  )
+))
+```
+##Thank you!
+
+
